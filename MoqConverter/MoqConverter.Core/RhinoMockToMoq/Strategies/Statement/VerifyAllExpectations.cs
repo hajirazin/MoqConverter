@@ -27,14 +27,13 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
             if (!(node.Expression is MemberAccessExpressionSyntax member))
                 return expressionStatement;
 
-            var memberExpression = member.Expression;
-            var mockGet = SyntaxFactory.InvocationExpression(
-                SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    SyntaxFactory.IdentifierName("Mock"), SyntaxFactory.IdentifierName("Get")),
-                SyntaxFactory.ArgumentList(
-                    SyntaxFactory.SeparatedList(new[] {SyntaxFactory.Argument(memberExpression)})));
+            if (!(member.Expression is IdentifierNameSyntax identifier))
+                return expressionStatement;
 
-            return expressionStatement.WithExpression(node.WithExpression(member.WithExpression(mockGet).WithName(SyntaxFactory.IdentifierName("VerifyAll"))));
+            var memberExpression = SyntaxFactory.IdentifierName(identifier.Identifier.ValueText + "Mock");
+
+            return expressionStatement.WithExpression(node.WithExpression(member.WithExpression(memberExpression)
+                .WithName(SyntaxFactory.IdentifierName("Verify"))));
         }
     }
 }

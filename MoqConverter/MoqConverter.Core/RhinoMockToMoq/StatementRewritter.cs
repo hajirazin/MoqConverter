@@ -10,19 +10,17 @@ namespace MoqConverter.Core.RhinoMockToMoq
     {
         private static readonly List<IStatementStrategy> StatementStrategies = new List<IStatementStrategy>
         {
-            //new Remover(),
+            new Remover(),
             new VerifyAllExpectations(),
-            //new Throw(),
+            new Throw(),
             //new WhenCalled(),
-            //new PropertyBehavior(),
-            new Assert("AssertWasCalled", "Verify"),
-            //new Assert("AssertWasNotCalled", "DidNotReceive"),
+            new PropertyBehavior(),
+            new Assert(),
             new Repeat(),
             new ReturnWithIgnore(),
             new Return(),
-            new MockRepository(),
-            //new ExpectWithoutReturn(),
-            //new Ignore()
+            new Ignore(),
+            new ExpectWithoutReturn()
         };
 
         public override SyntaxNode VisitExpressionStatement(ExpressionStatementSyntax node)
@@ -44,13 +42,13 @@ namespace MoqConverter.Core.RhinoMockToMoq
                     }
                     catch (Exception ex)
                     {
-                        Logger.Log("Exception in VisitInvocationExpression", ConsoleColor.Yellow);
+                        Logger.Log("Exception in VisitExpressionStatement", ConsoleColor.Yellow);
                     }
                 }
             }
             catch (Exception ex)
             {
-                Logger.Log("Exception in VisitInvocationExpression", ConsoleColor.Yellow);
+                Logger.Log("Exception in VisitExpressionStatement", ConsoleColor.Yellow);
             }
 
             return base.VisitExpressionStatement(node);

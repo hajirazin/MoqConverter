@@ -20,144 +20,99 @@ namespace MoqConverter.Core.RhinoMockToMoq
             return base.VisitUsingDirective(node);
         }
 
-        public override SyntaxNode VisitFieldDeclaration(FieldDeclarationSyntax node)
-        {
-            //if (node.Declaration.Type.ToString().Equals("MockRepository"))
-            //{
-            //    return null;
-            //}
-
-            return base.VisitFieldDeclaration(node);
-        }
-
-        public override SyntaxNode VisitLocalDeclarationStatement(LocalDeclarationStatementSyntax node)
-        {
-            if (node.ToString().Contains("MockRepository"))
-            {
-                var variables = node.Declaration.Variables;
-                var variable = variables[0];
-                if (!(variable.Initializer.Value is InvocationExpressionSyntax invocation))
-                    return node;
-
-                if (!(invocation.Expression is MemberAccessExpressionSyntax member))
-                    return node;
-
-                var typeArgument = member.Name as GenericNameSyntax;
-                var objectCreation =
-                    SyntaxFactory.ObjectCreationExpression(typeArgument.WithIdentifier(SyntaxFactory.Identifier("Mock")),
-                        invocation.ArgumentList,
-                        SyntaxFactory.InitializerExpression(SyntaxKind.ObjectInitializerExpression));
-
-                member = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, objectCreation,
-                    SyntaxFactory.IdentifierName("Object"));
-                
-                variables = variables.Replace(variable, variable.WithInitializer(variable.Initializer.WithValue(member)));
-                node = node.WithDeclaration(node.Declaration.WithVariables(variables));
-            }
-
-            //var nodeString = node.ToString();
-            //if (nodeString.Contains("MockRepository()"))
-            //{
-            //    return null;
-            //}
-
-            return base.VisitLocalDeclarationStatement(node);
-        }
-
         public override bool IsValidFile(CompilationUnitSyntax root)
         {
             return root != null && root.Usings.ToList().Any(u => u.Name.ToString().Contains("Rhino.Mocks"));
         }
 
-        //public override SyntaxNode VisitMethodDeclaration(MethodDeclarationSyntax node)
-        //{
-        //    var syntax = base.VisitMethodDeclaration(node);
-        //    if (syntax is MethodDeclarationSyntax method)
-        //    {
-        //        var statements = method.Body.Statements;
-        //        var childWithReceive = new List<StatementSyntax>();
-        //        var otherChild = new List<StatementSyntax>();
-        //        foreach (var statementSyntax in statements)
-        //        {
-        //            var statementString = statementSyntax.ToString();
-        //            if (statementString.Contains(".Receive"))
-        //            {
-        //                try
-        //                {
-        //                    if (statementString.Contains("Returns"))
-        //                    {
-        //                        if (!(statementSyntax is ExpressionStatementSyntax expressionStatementSyntax) ||
-        //                        !(expressionStatementSyntax.Expression is InvocationExpressionSyntax i) ||
-        //                        !(i.Expression is MemberAccessExpressionSyntax mmm))
-        //                        {
-        //                            otherChild.Add(statementSyntax);
-        //                            continue;
-        //                        }
+        public override SyntaxNode VisitMethodDeclaration(MethodDeclarationSyntax node)
+        {
+            return VisitMethodDeclaration(node, "MockRepository");
+        }
 
-        //                        var s = mmm.Expression;
-        //                        switch (s)
-        //                        {
-        //                            case InvocationExpressionSyntax inv when inv.Expression is MemberAccessExpressionSyntax mm:
-        //                            {
-        //                                var receiveExpression = expressionStatementSyntax.WithExpression(s);
-        //                                childWithReceive.Add(receiveExpression);
-        //                                var exp = ((MemberAccessExpressionSyntax)((InvocationExpressionSyntax)mm.Expression).Expression).Expression;
+        public override SyntaxNode VisitLocalDeclarationStatement(LocalDeclarationStatementSyntax node)
+        {
+            if (node.Declaration.Variables[0].Initializer.Value is ObjectCreationExpressionSyntax objectCreation &&
+                objectCreation.Type.ToString() == "MockRepository")
+            {
+                return null;
+            }
 
-        //                                var otherExpression =
-        //                                    expressionStatementSyntax.WithExpression(
-        //                                        i.WithExpression(
-        //                                            mmm.WithExpression(inv.WithExpression(mm.WithExpression(exp)))));
-        //                                otherChild.Add(otherExpression);
-        //                                break;
-        //                            }
-        //                            case MemberAccessExpressionSyntax m:
-        //                            {
-        //                                var z = Mollifier.MakeCompilerHappy(m);
-        //                                var receiveExpression = expressionStatementSyntax.WithExpression(z);
-        //                                childWithReceive.Add(receiveExpression);
-        //                                var exp = ((MemberAccessExpressionSyntax)((InvocationExpressionSyntax)m.Expression).Expression).Expression;
+            return base.VisitLocalDeclarationStatement(node);
+        }
 
-        //                                var otherExpression =
-        //                                    expressionStatementSyntax.WithExpression(
-        //                                        i.WithExpression(mmm.WithExpression(m.WithExpression(exp))));
-        //                                otherChild.Add(otherExpression);
-        //                                break;
-        //                            }
-        //                            default:
-        //                                otherChild.Add(statementSyntax);
-        //                                break;
-        //                        }
+        public override SyntaxNode VisitInvocationExpression(InvocationExpressionSyntax node)
+        {
+            if (node.Expression is MemberAccessExpressionSyntax member &&
+                member.Expression is IdentifierNameSyntax identifier
+                && identifier.ToString().Equals("MockRepository")
+                && member.Name is GenericNameSyntax typeArgument)
+            {
+                if (node.ArgumentList?.Arguments.Any() ?? false)
+                {
+                    var objectCreation =
+                        SyntaxFactory.ObjectCreationExpression(
+                            typeArgument.WithIdentifier(SyntaxFactory.Identifier("Mock")),
+                            node.ArgumentList,
+                            null);
+                    var expression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        objectCreation,
+                        SyntaxFactory.IdentifierName("Object"));
 
-        //                    }
-        //                    else
-        //                    {
-        //                        childWithReceive.Add(statementSyntax);
-        //                    }
-        //                }
-        //                catch (Exception e)
-        //                {
-        //                }
-        //            }
-        //            else
-        //            {
-        //                otherChild.Add(statementSyntax);
-        //            }
-        //        }
+                    return expression;
+                }
+                else
+                {
+                    typeArgument = typeArgument.WithIdentifier(SyntaxFactory.Identifier("Of"));
+                    node = node.WithExpression(member.WithExpression(SyntaxFactory.IdentifierName("Mock"))
+                        .WithName(typeArgument));
+                }
+            }
 
-        //        var newStatements = new SyntaxList<StatementSyntax>();
-        //        otherChild.AddRange(childWithReceive);
-        //        newStatements = newStatements.AddRange(otherChild);
-        //        method = method.WithBody(method.Body.WithStatements(newStatements));
-        //        return method;
-        //    }
-
-        //    return syntax;
-        //}
+            return base.VisitInvocationExpression(node);
+        }
 
         public override SyntaxNode VisitEmptyStatement(EmptyStatementSyntax node)
         {
             //Simply remove all Empty Statements
             return null;
+        }
+
+        public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)
+        {
+            if (node.Left is MemberAccessExpressionSyntax leftMember
+                && leftMember.Expression is IdentifierNameSyntax identifier
+                && Variables.Contains(identifier.ToString()))
+            {
+                var lambda = SyntaxFactory.SimpleLambdaExpression(
+                    SyntaxFactory.Parameter(SyntaxFactory.Identifier("setup")),
+                    SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        SyntaxFactory.IdentifierName("setup"), leftMember.Name));
+                ExpressionSyntax setup = SyntaxFactory.InvocationExpression(
+                    SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        SyntaxFactory.IdentifierName(identifier + "Mock"),
+                        SyntaxFactory.IdentifierName("Setup")),
+                    SyntaxFactory.ArgumentList().WithArguments(
+                        SyntaxFactory.SeparatedList(new[] { SyntaxFactory.Argument(lambda) })
+                    ));
+
+                var right = node.Right;
+                if (right is InvocationExpressionSyntax invocation)
+                {
+                    right = this.VisitInvocationExpression(invocation) as ExpressionSyntax;
+                }
+
+                var exp = SyntaxFactory.InvocationExpression(
+                    SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, setup,
+                        SyntaxFactory.IdentifierName("Returns")),
+                    SyntaxFactory.ArgumentList().WithArguments(
+                        SyntaxFactory.SeparatedList(new[] { SyntaxFactory.Argument(right ?? node.Right) })
+                    ));
+
+                return exp;
+            }
+
+            return base.VisitAssignmentExpression(node);
         }
     }
 }

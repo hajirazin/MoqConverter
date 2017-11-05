@@ -19,9 +19,9 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.MemberAccess
         public SyntaxNode Visit(MemberAccessExpressionSyntax node)
         {
             var nodeString = node.ToString();
-            nodeString = Regex.Replace(nodeString, "Arg(<[a-zA-Z0-9,_ <>\\[\\]]+>).Is.Equal", "It.Is");
-            nodeString = Regex.Replace(nodeString, "Arg(<[a-zA-Z0-9,_ <>\\[\\]]+>).Is.Same", "It.Is");
-            nodeString = Regex.Replace(nodeString, "Arg<([a-zA-Z0-9,_ <>\\[\\]]+)>.Is.Null", "It.Is(($1)null)");
+            nodeString = Regex.Replace(nodeString, "Arg(<[a-zA-Z0-9,_ <>\\[\\]]+>).Is.Equal", "It.IsIn");
+            nodeString = Regex.Replace(nodeString, "Arg(<[a-zA-Z0-9,_ <>\\[\\]]+>).Is.Same", "It.IsIn");
+            nodeString = Regex.Replace(nodeString, "Arg<([a-zA-Z0-9,_ <>\\[\\]]+)>.Is.Null", "It.IsIn(($1)null)");
             nodeString = Regex.Replace(nodeString, "Arg<([a-zA-Z0-9,_ <>\\[\\]]+)>.Is.NotNull", "It.Is<$1>(a => a != null)");
             return SyntaxFactory.ParseExpression(nodeString);
         }

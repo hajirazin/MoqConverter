@@ -10,8 +10,8 @@ namespace MoqConverter.Console
         {
             Logger.Init();
             var converter = new SolutionConverter();
-            converter.Convert(@"C:\TTL\web\source\WebComponents\");
-            //converter.Convert(@"C:\TTL\web\source\WebComponents\Upsell.UnitTests");
+            //converter.Convert(@"C:\TTL\web\source\WebComponents\");
+            converter.Convert(@"C:\TTL\web\source\WebComponents\JourneyOptions\test\UnitTests");
             Logger.Log("End ...");
             System.Console.ReadLine();
         }

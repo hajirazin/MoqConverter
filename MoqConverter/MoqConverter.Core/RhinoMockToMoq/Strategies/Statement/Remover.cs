@@ -8,8 +8,8 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
     {
         private static readonly List<string> StatementsToRemove = new List<string>
         {
-            ".VerifyAllExpectations",
-            ".VerifyAll()",
+          //  ".VerifyAllExpectations",
+          //  ".VerifyAll()",
             ".Replay()",
             ".ReplayAll()",
             "MockRepository()"

@@ -15,39 +15,39 @@ namespace MoqConverter.Core.Converters
     {
         public void Convert(Project project)
         {
-            if (!project.HasNSubstituteReference)
-            {
-                //if (!project.HasRhinoMockReference)
-                return;
-            }
+            //if (!project.HasNSubstituteReference)
+            //{
+            //    if (!project.HasRhinoMockReference)
+            //        return;
+            //}
 
             Logger.Log($"Starting Convertion of project {Path.GetFileNameWithoutExtension(project.ProjectPath)}", ConsoleColor.Green);
 
             //if (project.HasRhinoMockReference)
             //    project.RemoveRhinoMockReference();
 
-            if (project.HasNSubstituteReference)
-                project.RemoveNSubstituteReference();
+            //if (project.HasNSubstituteReference)
+            //    project.RemoveNSubstituteReference();
 
-            if (!project.HasMoqReference)
-                project.AddMoqReference();
+            //if (!project.HasMoqReference)
+            //    project.AddMoqReference();
 
             Parallel.ForEach(project.Files, projectFile =>
             {
                 FileRewritter rewriter;
-                if (project.HasNSubstituteReference)
-                {
-                    rewriter = new NSubstituteToMoq.Rewritter();
-                    var fileConverter = new FileConverter(rewriter);
-                    fileConverter.Convert(projectFile);
-                }
-
-                //if (project.HasRhinoMockReference)
+                //if (project.HasNSubstituteReference)
                 //{
-                //    rewriter = new Rewritter();
+                //    rewriter = new NSubstituteToMoq.Rewritter();
                 //    var fileConverter = new FileConverter(rewriter);
                 //    fileConverter.Convert(projectFile);
                 //}
+
+                //if (project.HasRhinoMockReference)
+                {
+                    rewriter = new Rewritter();
+                    var fileConverter = new FileConverter(rewriter);
+                    fileConverter.Convert(projectFile);
+                }
             });
         }
     }

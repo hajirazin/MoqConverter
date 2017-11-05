@@ -7,6 +7,10 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
     {
         public bool IsEligible(ExpressionStatementSyntax expressionStatement)
         {
+            if (expressionStatement.ToString().Contains("t.Error"))
+            {
+                
+            }
             if (!(expressionStatement.Expression is InvocationExpressionSyntax node))
                 return false;
             if (!(node.Expression is MemberAccessExpressionSyntax member))
@@ -18,17 +22,10 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
 
         public ExpressionStatementSyntax Visit(ExpressionStatementSyntax expressionStatement)
         {
-            if (!(expressionStatement.Expression is InvocationExpressionSyntax node)) return expressionStatement;
-            var nodeString = node.ToString();
-            if (nodeString.Contains("ReturnsForAnyArgs") || nodeString.Contains("ReceivedWithAnyArgs"))
-            {
-                nodeString = nodeString.Replace("IgnoreArguments()", "");
-            }
+            var node = ((MemberAccessExpressionSyntax) ((InvocationExpressionSyntax) expressionStatement.Expression)
+                .Expression).Expression;
 
-            nodeString = nodeString.Contains("Returns")
-                ? nodeString.Replace("IgnoreArguments()", "").Replace("Returns", "ReturnsForAnyArgs")
-                : nodeString.Replace("IgnoreArguments", "ReceivedWithAnyArgs");
-            return expressionStatement.WithExpression(SyntaxFactory.ParseExpression(nodeString));
+            return expressionStatement.WithExpression(node);
         }
     }
 }

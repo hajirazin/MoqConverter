@@ -5,18 +5,10 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
 {
     public class Assert : IStatementStrategy
     {
-        private readonly string _fromString;
-        private readonly string _toString;
-
-        public Assert(string fromString, string toString)
-        {
-            _fromString = fromString;
-            _toString = toString;
-        }
-
         public bool IsEligible(ExpressionStatementSyntax expressionStatement)
         {
-            return expressionStatement.ToString().Contains(_fromString);
+            var str = expressionStatement.ToString();
+            return str.Contains("AssertWasCalled") || str.Contains("AssertWasNotCalled");
         }
 
         public ExpressionStatementSyntax Visit(ExpressionStatementSyntax expressionStatement)
@@ -26,16 +18,23 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
             if (!(node.Expression is MemberAccessExpressionSyntax member))
                 return expressionStatement;
 
-            var memberExpression = member.Expression;
-            var mockGet = SyntaxFactory.InvocationExpression(
-                SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    SyntaxFactory.IdentifierName("Mock"), SyntaxFactory.IdentifierName("Get")),
-                SyntaxFactory.ArgumentList(
-                    SyntaxFactory.SeparatedList(new[] { SyntaxFactory.Argument(memberExpression) })));
+            if (!(member.Expression is IdentifierNameSyntax identifier))
+                return expressionStatement;
 
-            member = member.WithExpression(mockGet).WithName(SyntaxFactory.IdentifierName("Verify"));
+            var verify = "Verify";
+            var lambdaBody = ((LambdaExpressionSyntax)node.ArgumentList.Arguments[0].Expression).Body;
+            if (lambdaBody is AssignmentExpressionSyntax)
+            {
+                verify = "VerifySet";
+            }
+
+            var str = node.ToString().Contains("AssertWasNotCalled") ? "Times.Never" : "Times.AtLeastOnce";
+            var mockGet = SyntaxFactory.IdentifierName(identifier.Identifier.ValueText + "Mock");
+
+            member = member.WithExpression(mockGet).WithName(SyntaxFactory.IdentifierName(verify));
             node = node.WithExpression(member);
-
+            node = node.WithArgumentList(node.ArgumentList.WithArguments(
+                node.ArgumentList.Arguments.Add(SyntaxFactory.Argument(SyntaxFactory.ParseExpression(str)))));
             return expressionStatement.WithExpression(node);
             //if (!(expressionStatement.Expression is InvocationExpressionSyntax node)) return expressionStatement;
             //var body = ((SimpleLambdaExpressionSyntax)node.ArgumentList.Arguments[0].Expression).Body;
