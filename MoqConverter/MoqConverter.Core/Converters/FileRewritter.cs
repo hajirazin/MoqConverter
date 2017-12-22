@@ -31,7 +31,7 @@ namespace MoqConverter.Core.Converters
                     assignment.Right is InvocationExpressionSyntax invocation &&
                     invocation.Expression is MemberAccessExpressionSyntax member &&
                     member.Expression is IdentifierNameSyntax identifier
-                    && identifier.ToString().Equals(mocker, StringComparison.OrdinalIgnoreCase)
+                  ///  && identifier.ToString().Equals(mocker, StringComparison.OrdinalIgnoreCase)
                     && member.Name is GenericNameSyntax typeArgument)
                 {
                     Variables.Add(variableName.ToString());
@@ -41,6 +41,28 @@ namespace MoqConverter.Core.Converters
                             invocation.ArgumentList,
                             null);
 
+                    if (typeArgument.Identifier.ToString() == "GeneratePartialMock")
+                    {
+                        objectCreation = objectCreation.WithInitializer(SyntaxFactory.InitializerExpression(
+                            SyntaxKind.ObjectInitializerExpression,
+                            SyntaxFactory.SeparatedList(new ExpressionSyntax[]
+                            {
+                                SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                                    SyntaxFactory.IdentifierName("CallBase"), SyntaxFactory.IdentifierName("true"))
+                            })));
+                    }
+                    else if (typeArgument.Identifier.ToString() == "StrictMock")
+                    {
+                        objectCreation = objectCreation.WithArgumentList(objectCreation.ArgumentList.WithArguments(
+                            SyntaxFactory.SeparatedList(new[]
+                            {
+                                SyntaxFactory.Argument(SyntaxFactory.MemberAccessExpression(
+                                    SyntaxKind.SimpleMemberAccessExpression,
+                                    SyntaxFactory.IdentifierName("MockBehavior"),
+                                    SyntaxFactory.IdentifierName("Strict")))
+                            })));
+                    }
+
                     member = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         SyntaxFactory.IdentifierName(variableName + "Mock"),
                         SyntaxFactory.IdentifierName("Object"));
@@ -49,6 +71,7 @@ namespace MoqConverter.Core.Converters
 
                     var newAssignment = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
                         SyntaxFactory.IdentifierName(variableName + "Mock"), objectCreation);
+
 
                     var objectCreationStatement = SyntaxFactory.ExpressionStatement(assignment);
                     var x = statements.FirstOrDefault(f => IsSame(f, variableName.ToString()));
@@ -65,7 +88,6 @@ namespace MoqConverter.Core.Converters
                     && identifier1.ToString().Equals(mocker, StringComparison.OrdinalIgnoreCase)
                     && member1.Name is GenericNameSyntax typeArgument1)
                 {
-
                     Variables.Add(variable.Identifier.ToString());
                     var objectCreation =
                         SyntaxFactory.ObjectCreationExpression(

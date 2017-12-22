@@ -20,7 +20,8 @@ namespace MoqConverter.Core.RhinoMockToMoq
             new ReturnWithIgnore(),
             new Return(),
             new Ignore(),
-            new ExpectWithoutReturn()
+            new ExpectWithoutReturn(),
+            new MockRepository()
         };
 
         public override SyntaxNode VisitExpressionStatement(ExpressionStatementSyntax node)

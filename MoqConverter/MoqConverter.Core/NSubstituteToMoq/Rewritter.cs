@@ -73,7 +73,9 @@ namespace MoqConverter.Core.NSubstituteToMoq
                 {
                     var mockGet = SyntaxFactory.IdentifierName(mockObject.Identifier.ValueText + "Mock");
 
-                    var name = isReturnForAnyArgs ? "SetupIgnoreArgs" : "Setup";
+                    var name = isReturnForAnyArgs && member.Expression is InvocationExpressionSyntax
+                        ? "SetupIgnoreArgs"
+                        : "Setup";
                     var setup = SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(
                             SyntaxKind.SimpleMemberAccessExpression, mockGet, SyntaxFactory.IdentifierName(name)),
                         SyntaxFactory.ArgumentList(
