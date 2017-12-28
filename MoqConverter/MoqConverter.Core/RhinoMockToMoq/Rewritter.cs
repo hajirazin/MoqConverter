@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -32,10 +33,17 @@ namespace MoqConverter.Core.RhinoMockToMoq
 
         public override SyntaxNode VisitLocalDeclarationStatement(LocalDeclarationStatementSyntax node)
         {
-            if (node.Declaration.Variables[0].Initializer.Value is ObjectCreationExpressionSyntax objectCreation &&
-                objectCreation.Type.ToString() == "MockRepository")
+            try
             {
-                return null;
+                if (node.Declaration.Variables[0].Initializer.Value is ObjectCreationExpressionSyntax objectCreation &&
+                    objectCreation.Type.ToString() == "MockRepository")
+                {
+                    return null;
+                }
+            }
+            catch
+            {
+                Logger.Log("Exception in VisitLocalDeclarationStatement", ConsoleColor.Yellow);
             }
 
             return base.VisitLocalDeclarationStatement(node);
@@ -61,12 +69,10 @@ namespace MoqConverter.Core.RhinoMockToMoq
 
                     return expression;
                 }
-                else
-                {
-                    typeArgument = typeArgument.WithIdentifier(SyntaxFactory.Identifier("Of"));
-                    node = node.WithExpression(member.WithExpression(SyntaxFactory.IdentifierName("Mock"))
-                        .WithName(typeArgument));
-                }
+
+                typeArgument = typeArgument.WithIdentifier(SyntaxFactory.Identifier("Of"));
+                node = node.WithExpression(member.WithExpression(SyntaxFactory.IdentifierName("Mock"))
+                    .WithName(typeArgument));
             }
 
             return base.VisitInvocationExpression(node);
@@ -80,36 +86,54 @@ namespace MoqConverter.Core.RhinoMockToMoq
 
         public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)
         {
-            if (node.Left is MemberAccessExpressionSyntax leftMember
-                && leftMember.Expression is IdentifierNameSyntax identifier
-                && Variables.Contains(identifier.ToString()))
+            try
             {
-                var lambda = SyntaxFactory.SimpleLambdaExpression(
-                    SyntaxFactory.Parameter(SyntaxFactory.Identifier("setup")),
-                    SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        SyntaxFactory.IdentifierName("setup"), leftMember.Name));
-                ExpressionSyntax setup = SyntaxFactory.InvocationExpression(
-                    SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        SyntaxFactory.IdentifierName(identifier + "Mock"),
-                        SyntaxFactory.IdentifierName("Setup")),
-                    SyntaxFactory.ArgumentList().WithArguments(
-                        SyntaxFactory.SeparatedList(new[] { SyntaxFactory.Argument(lambda) })
-                    ));
-
-                var right = node.Right;
-                if (right is InvocationExpressionSyntax invocation)
+                if (node.Left is MemberAccessExpressionSyntax leftMember
+                    && leftMember.Expression is IdentifierNameSyntax identifier
+                    && Variables.Contains(identifier.ToString()))
                 {
-                    right = this.VisitInvocationExpression(invocation) as ExpressionSyntax;
+                    var lambda = SyntaxFactory.SimpleLambdaExpression(
+                        SyntaxFactory.Parameter(SyntaxFactory.Identifier("setup")),
+                        SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            SyntaxFactory.IdentifierName("setup"), leftMember.Name));
+                    ExpressionSyntax setup = SyntaxFactory.InvocationExpression(
+                        SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            SyntaxFactory.IdentifierName(identifier + "Mock"),
+                            SyntaxFactory.IdentifierName("Setup")),
+                        SyntaxFactory.ArgumentList().WithArguments(
+                            SyntaxFactory.SeparatedList(new[] { SyntaxFactory.Argument(lambda) })
+                        ));
+
+                    var right = node.Right;
+                    if (right is InvocationExpressionSyntax invocation)
+                    {
+                        right = this.VisitInvocationExpression(invocation) as ExpressionSyntax;
+                    }
+
+                    right = right ?? node.Right;
+                    var rightArgument = SyntaxFactory.Argument(right ?? node.Right);
+                    if (right is LiteralExpressionSyntax literal &&
+                        literal.Kind() == SyntaxKind.NullLiteralExpression)
+                    {
+                        rightArgument = rightArgument.WithNameColon(SyntaxFactory.NameColon(SyntaxFactory.IdentifierName("value")));
+                    }
+
+                    var exp = SyntaxFactory.InvocationExpression(
+                        SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, setup,
+                            SyntaxFactory.IdentifierName("Returns")),
+                        SyntaxFactory.ArgumentList().WithArguments(
+                            SyntaxFactory.SeparatedList(new[]
+                            {
+                                rightArgument
+                            })
+                        ));
+
+                    return exp;
                 }
-
-                var exp = SyntaxFactory.InvocationExpression(
-                    SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, setup,
-                        SyntaxFactory.IdentifierName("Returns")),
-                    SyntaxFactory.ArgumentList().WithArguments(
-                        SyntaxFactory.SeparatedList(new[] { SyntaxFactory.Argument(right ?? node.Right) })
-                    ));
-
-                return exp;
+            }
+            catch (Exception exception)
+            {
+                Logger.Log("Exception in VisitAssignmentExpression", ConsoleColor.Yellow);
             }
 
             return base.VisitAssignmentExpression(node);

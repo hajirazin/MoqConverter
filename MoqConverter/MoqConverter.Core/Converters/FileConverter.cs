@@ -26,13 +26,22 @@ namespace MoqConverter.Core.Converters
             var text = File.ReadAllText(file);
             var syntaxTree = CSharpSyntaxTree.ParseText(text);
             var root = syntaxTree.GetRoot();
-            if (_syntaxRewriter.IsValidFile(root as CompilationUnitSyntax))
+
+            if (!_syntaxRewriter.IsValidFile(root as CompilationUnitSyntax))
+                return;
+
+            Logger.Log($"Starting Convertion of file {Path.GetFileNameWithoutExtension(file)}", ConsoleColor.Red);
+            try
             {
-                Logger.Log($"Starting Convertion of file {Path.GetFileNameWithoutExtension(file)}", ConsoleColor.Red);
                 root = _syntaxRewriter.Visit(root);
-                var code = Prettify(root);
-                File.WriteAllText(file, code);
             }
+            catch (Exception exception)
+            {
+                Logger.Log($"Failed Convertion of file {Path.GetFileNameWithoutExtension(file)}", ConsoleColor.Yellow);
+            }
+
+            var code = Prettify(root);
+            File.WriteAllText(file, code);
         }
 
         private static string Prettify(SyntaxNode root)

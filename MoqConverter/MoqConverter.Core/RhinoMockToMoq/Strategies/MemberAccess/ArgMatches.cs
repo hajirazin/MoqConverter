@@ -11,7 +11,7 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.MemberAccess
         {
             var nodeString = node.ToString();
             var nodeNameString = node.Name.ToString();
-            return nodeString.Contains("Arg") && nodeNameString.Contains("Matches");
+            return nodeString.Contains("Arg") && (nodeNameString.Contains("Matches") || nodeString.Contains(".List.ContainsAll"));
         }
 
         public SyntaxNode Visit(MemberAccessExpressionSyntax node)
@@ -19,6 +19,7 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.MemberAccess
             var nodeString = node.ToString();
             
             nodeString = Regex.Replace(nodeString, "Arg(<[a-zA-Z0-9,_ <>\\[\\]]+>)(.*)Matches", "It.Is$1", RegexOptions.Singleline);
+            nodeString = Regex.Replace(nodeString, "Arg(<[a-zA-Z0-9,_ <>\\[\\]]+>).List.ContainsAll", "It.IsIn$1", RegexOptions.Singleline);
             return SyntaxFactory.ParseExpression(nodeString);
         }
     }

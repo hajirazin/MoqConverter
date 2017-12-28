@@ -18,8 +18,8 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.MemberAccess
         public SyntaxNode Visit(MemberAccessExpressionSyntax node)
         {
             var nodeString = node.ToString();
-            nodeString = Regex.Replace(nodeString, "Arg(<[a-zA-Z0-9,_ <>\\[\\]]+>).Is.Anything", "It.IsAny$1()");
-            nodeString = Regex.Replace(nodeString, "Arg(<[a-zA-Z0-9,_ <>\\[\\]]+>).Is.TypeOf", "It.IsAny$1()");
+            nodeString = Regex.Replace(nodeString, "Arg(<[a-zA-Z0-9,_. <>\\[\\]]+>).Is.Anything", "It.IsAny$1()");
+            nodeString = Regex.Replace(nodeString, "Arg(<[a-zA-Z0-9,_. <>\\[\\]]+>).Is.TypeOf", "It.IsAny$1()");
             return SyntaxFactory.ParseExpression(nodeString);
         }
     }

@@ -13,6 +13,7 @@ namespace MoqConverter.Core.RhinoMockToMoq
             new Remover(),
             new VerifyAllExpectations(),
             new Throw(),
+            new OutRef(),
             //new WhenCalled(),
             new PropertyBehavior(),
             new Assert(),
@@ -21,7 +22,8 @@ namespace MoqConverter.Core.RhinoMockToMoq
             new Return(),
             new Ignore(),
             new ExpectWithoutReturn(),
-            new MockRepository()
+            new MockRepository(),
+            new BackToRecord()
         };
 
         public override SyntaxNode VisitExpressionStatement(ExpressionStatementSyntax node)

@@ -22,10 +22,30 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
                 return expressionStatement;
 
             var verify = "Verify";
-            var lambdaBody = ((LambdaExpressionSyntax)node.ArgumentList.Arguments[0].Expression).Body;
+            var lambdaArgument = node.ArgumentList.Arguments[0];
+            var lambdaExpression = (LambdaExpressionSyntax)lambdaArgument.Expression;
+            var lambdaBody = lambdaExpression.Body;
             if (lambdaBody is AssignmentExpressionSyntax)
             {
                 verify = "VerifySet";
+            }
+
+            var nodeArguments = node.ArgumentList.Arguments;
+            if (lambdaBody is BlockSyntax block)
+            {
+                verify = "VerifySet";
+                var statement = block.Statements.First();
+                if (statement is LocalDeclarationStatementSyntax declaration
+                    && declaration.Declaration?.Variables.FirstOrDefault()?.Initializer?.Value is MemberAccessExpressionSyntax m)
+                {
+                    verify = "VerifyGet";
+                    nodeArguments = SyntaxFactory.SeparatedList(new[]
+                    {
+                        SyntaxFactory.Argument(SyntaxFactory.SimpleLambdaExpression(
+                            SyntaxFactory.Parameter(SyntaxFactory.Identifier("v")),
+                            m.WithExpression(SyntaxFactory.IdentifierName("v"))))
+                    });
+                }
             }
 
             var str = node.ToString().Contains("AssertWasNotCalled") ? "Times.Never" : "Times.AtLeastOnce";
@@ -34,7 +54,7 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
             member = member.WithExpression(mockGet).WithName(SyntaxFactory.IdentifierName(verify));
             node = node.WithExpression(member);
             node = node.WithArgumentList(node.ArgumentList.WithArguments(
-                node.ArgumentList.Arguments.Add(SyntaxFactory.Argument(SyntaxFactory.ParseExpression(str)))));
+                nodeArguments.Add(SyntaxFactory.Argument(SyntaxFactory.ParseExpression(str)))));
             return expressionStatement.WithExpression(node);
             //if (!(expressionStatement.Expression is InvocationExpressionSyntax node)) return expressionStatement;
             //var body = ((SimpleLambdaExpressionSyntax)node.ArgumentList.Arguments[0].Expression).Body;

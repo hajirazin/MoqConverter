@@ -7,10 +7,6 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
     {
         public bool IsEligible(ExpressionStatementSyntax expressionStatement)
         {
-            if (expressionStatement.ToString().Contains("t.Error"))
-            {
-                
-            }
             if (!(expressionStatement.Expression is InvocationExpressionSyntax node))
                 return false;
             if (!(node.Expression is MemberAccessExpressionSyntax member))
@@ -22,10 +18,41 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
 
         public ExpressionStatementSyntax Visit(ExpressionStatementSyntax expressionStatement)
         {
-            var node = ((MemberAccessExpressionSyntax) ((InvocationExpressionSyntax) expressionStatement.Expression)
+            var n1 = ((MemberAccessExpressionSyntax) ((InvocationExpressionSyntax) expressionStatement.Expression)
                 .Expression).Expression;
 
-            return expressionStatement.WithExpression(node);
+            if (!(n1 is InvocationExpressionSyntax node))
+                return expressionStatement;
+
+            if (!(node.Expression is MemberAccessExpressionSyntax member))
+                return expressionStatement;
+
+            if (!(member.Expression is IdentifierNameSyntax identifier))
+                return expressionStatement;
+
+            var nodeString = expressionStatement.ToString();
+            var isExpect = nodeString.Contains(".Expect");
+
+            var setup = "SetupIgnoreArgs";
+            var lambdaBody = ((LambdaExpressionSyntax)node.ArgumentList.Arguments[0].Expression).Body;
+            if (lambdaBody is AssignmentExpressionSyntax)
+            {
+                setup = "SetupSet";
+            }
+
+            member = member.WithName(SyntaxFactory.IdentifierName(setup))
+                .WithExpression(SyntaxFactory.IdentifierName(identifier + "Mock"));
+
+            node = node.WithExpression(member);
+
+            if (isExpect)
+            {
+                node = SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(
+                    SyntaxKind.SimpleMemberAccessExpression, node, SyntaxFactory.IdentifierName("Verifiable")));
+            }
+
+            expressionStatement = expressionStatement.WithExpression(node);
+            return expressionStatement;
         }
     }
 }
