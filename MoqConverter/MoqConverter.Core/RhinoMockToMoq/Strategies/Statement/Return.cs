@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -32,19 +33,33 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
         public virtual ExpressionStatementSyntax Visit(ExpressionStatementSyntax expressionStatement)
         {
             var nodeString = expressionStatement.ToString();
+            var isRepeatAny = false;
+            var isRepeatNever = false;
             var isExpect = nodeString.Contains(".Expect");
-            var node = (InvocationExpressionSyntax) expressionStatement.Expression;
+            var node = (InvocationExpressionSyntax)expressionStatement.Expression;
             var memberOuter = (MemberAccessExpressionSyntax)node.Expression;
             var nodeInner = (InvocationExpressionSyntax)memberOuter.Expression;
             var member = (MemberAccessExpressionSyntax)nodeInner.Expression;
             ExpressionSyntax expression;
             if (member.Expression is MemberAccessExpressionSyntax property)
             {
-                expression = SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName("Mock"),
-                        SyntaxFactory.IdentifierName("Get")),
-                    SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
-                        {SyntaxFactory.Argument(property)})));
+                if (property.Name.ToString() == "Repeat")
+                {
+                    isRepeatAny = member.Name.ToString() == "Any";
+                    isRepeatNever = member.Name.ToString() == "Never";
+                    
+                    nodeInner = (InvocationExpressionSyntax)property.Expression;
+                    member = (MemberAccessExpressionSyntax)nodeInner.Expression;
+                    var identifier = (IdentifierNameSyntax)member.Expression;
+                    var mockGet = SyntaxFactory.IdentifierName(identifier + "Mock");
+                    expression = mockGet;
+                }
+                else
+                    expression = SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName("Mock"),
+                            SyntaxFactory.IdentifierName("Get")),
+                        SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
+                            {SyntaxFactory.Argument(property)})));
             }
             else
             {
@@ -78,10 +93,20 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
             }
 
             node = node.WithArgumentList(node.ArgumentList.WithArguments(argumentList));
-            if (isExpect)
+            if (isExpect && !isRepeatAny && !isRepeatNever)
             {
                 node = SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression, node, SyntaxFactory.IdentifierName("Verifiable")));
+            }
+
+            if (isRepeatNever)
+            {
+                node = (InvocationExpressionSyntax) ((MemberAccessExpressionSyntax) node.Expression).Expression;
+                node = SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(
+                    SyntaxKind.SimpleMemberAccessExpression, node,
+                    SyntaxFactory.GenericName(SyntaxFactory.Identifier("Throws"),
+                        SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(new[]
+                            {(TypeSyntax) SyntaxFactory.IdentifierName("Exception")})))));
             }
 
             return expressionStatement.WithExpression(node);

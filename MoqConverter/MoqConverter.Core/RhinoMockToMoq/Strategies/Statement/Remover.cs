@@ -12,7 +12,9 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
           //  ".VerifyAll()",
             ".Replay()",
             ".ReplayAll()",
-            "MockRepository()"
+            "MockRepository()",
+            "mocks.VerifyAll()",
+            "mockRepository.VerifyAll()"
         };
 
         public bool IsEligible(ExpressionStatementSyntax expressionStatement)

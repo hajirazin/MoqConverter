@@ -92,6 +92,28 @@ namespace MoqConverter.Core.Converters
                                     invocation1.ArgumentList,
                                     null);
 
+                            if (typeArgument1.Identifier.ToString() == "GeneratePartialMock")
+                            {
+                                objectCreation = objectCreation.WithInitializer(SyntaxFactory.InitializerExpression(
+                                    SyntaxKind.ObjectInitializerExpression,
+                                    SyntaxFactory.SeparatedList(new ExpressionSyntax[]
+                                    {
+                                        SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                                            SyntaxFactory.IdentifierName("CallBase"), SyntaxFactory.IdentifierName("true"))
+                                    })));
+                            }
+                            else if (typeArgument1.Identifier.ToString() == "StrictMock")
+                            {
+                                objectCreation = objectCreation.WithArgumentList(objectCreation.ArgumentList.WithArguments(
+                                    SyntaxFactory.SeparatedList(new[]
+                                    {
+                                        SyntaxFactory.Argument(SyntaxFactory.MemberAccessExpression(
+                                            SyntaxKind.SimpleMemberAccessExpression,
+                                            SyntaxFactory.IdentifierName("MockBehavior"),
+                                            SyntaxFactory.IdentifierName("Strict")))
+                                    })));
+                            }
+
                             member = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                 SyntaxFactory.IdentifierName(variable.Identifier + "Mock"),
                                 SyntaxFactory.IdentifierName("Object"));

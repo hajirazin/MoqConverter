@@ -22,7 +22,8 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
                 || m.Name.ToString() != "BackToRecord")
                 return expressionStatement;
 
-            return expressionStatement.WithExpression(i.WithExpression(m.WithName(SyntaxFactory.IdentifierName("Reset"))));
+            return expressionStatement.WithExpression(i.WithExpression(m.WithName(SyntaxFactory.IdentifierName("Reset"))
+                .WithExpression(SyntaxFactory.IdentifierName(m + "Mock"))));
         }
     }
 }

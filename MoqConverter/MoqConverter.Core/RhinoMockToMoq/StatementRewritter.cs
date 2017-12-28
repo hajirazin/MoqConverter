@@ -21,6 +21,7 @@ namespace MoqConverter.Core.RhinoMockToMoq
             new ReturnWithIgnore(),
             new Return(),
             new Ignore(),
+            new IgnoreWithReturn(),
             new ExpectWithoutReturn(),
             new MockRepository(),
             new BackToRecord()

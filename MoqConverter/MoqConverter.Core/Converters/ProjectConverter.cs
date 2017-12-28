@@ -17,8 +17,8 @@ namespace MoqConverter.Core.Converters
         {
             //if (!project.HasNSubstituteReference)
             //{
-            //    if (!project.HasRhinoMockReference)
-            //        return;
+            //if (!project.HasRhinoMockReference)
+            //    return;
             //}
 
             Logger.Log($"Starting Convertion of project {Path.GetFileNameWithoutExtension(project.ProjectPath)}", ConsoleColor.Green);
