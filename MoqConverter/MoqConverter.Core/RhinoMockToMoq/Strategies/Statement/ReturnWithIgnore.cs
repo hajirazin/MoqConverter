@@ -49,7 +49,8 @@ namespace MoqConverter.Core.RhinoMockToMoq.Strategies.Statement
             memberOuter = memberOuter.WithExpression(nodeInner).WithName(SyntaxFactory.IdentifierName("Returns"));
 
             node = node.WithExpression(memberOuter);
-            if (node.ArgumentList?.Arguments == null || node.ArgumentList.Arguments.Count <= 0)
+            if (node.ArgumentList?.Arguments == null || node.ArgumentList.Arguments
+                    .Count <= 0)
                 return expressionStatement.WithExpression(node);
 
             var argumentList = new SeparatedSyntaxList<ArgumentSyntax>();

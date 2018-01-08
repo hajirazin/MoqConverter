@@ -19,6 +19,7 @@ namespace MoqConverter.Core.RhinoMockToMoq
             new Assert(),
             new Repeat(),
             new ReturnWithIgnore(),
+            new ExpectWithCall(),
             new Return(),
             new Ignore(),
             new IgnoreWithReturn(),
