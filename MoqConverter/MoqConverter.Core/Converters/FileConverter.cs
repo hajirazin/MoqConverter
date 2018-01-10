@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -21,28 +23,38 @@ namespace MoqConverter.Core.Converters
         {
             _syntaxRewriter = syntaxRewriter;
         }
-        public void Convert(string file)
+        public void Convert(string files)
         {
-            var text = File.ReadAllText(file);
-            var syntaxTree = CSharpSyntaxTree.ParseText(text);
-            var root = syntaxTree.GetRoot();
-
-            if (!_syntaxRewriter.IsValidFile(root as CompilationUnitSyntax))
-                return;
-
-            Logger.Log($"Starting Convertion of file {Path.GetFileNameWithoutExtension(file)}", ConsoleColor.Red);
-            try
+            foreach (var file in DirSearch(files))
             {
-                root = _syntaxRewriter.Visit(root);
-            }
-            catch (Exception exception)
-            {
-                Logger.Log($"Failed Convertion of file {Path.GetFileNameWithoutExtension(file)}", ConsoleColor.Yellow);
-            }
+                var text = File.ReadAllText(file);
+                var syntaxTree = CSharpSyntaxTree.ParseText(text);
+                var root = syntaxTree.GetRoot();
 
-            var code = Prettify(root);
-            File.WriteAllText(file, code);
+                if (!_syntaxRewriter.IsValidFile(root as CompilationUnitSyntax))
+                    continue;
+
+                Logger.Log($"Starting Convertion of file {Path.GetFileNameWithoutExtension(file)}", ConsoleColor.Red);
+                try
+                {
+                    root = _syntaxRewriter.Visit(root);
+                }
+                catch (Exception exception)
+                {
+                    Logger.Log($"Failed Convertion of file {Path.GetFileNameWithoutExtension(file)}",
+                        ConsoleColor.Yellow);
+                }
+
+                var code = Prettify(root);
+                File.WriteAllText(file, code);
+            }
         }
+
+        private List<string> DirSearch(string sDir)
+        {
+            return Directory.GetFiles(sDir, "*.*", SearchOption.AllDirectories).ToList();
+        }
+
 
         private static string Prettify(SyntaxNode root)
         {

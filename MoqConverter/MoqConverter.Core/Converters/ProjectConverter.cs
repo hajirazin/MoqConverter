@@ -16,7 +16,7 @@ namespace MoqConverter.Core.Converters
         public void Convert(Project project)
         {
             //if (!project.HasNSubstituteReference)
-            //{
+            ////{
             //if (!project.HasRhinoMockReference)
             //    return;
             //}
